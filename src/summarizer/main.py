@@ -4,7 +4,7 @@ import sys
 
 from dotenv import load_dotenv
 
-from summarizer import summarize_file
+from .core import summarize_file
 
 
 def main() -> int:

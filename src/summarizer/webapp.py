@@ -7,7 +7,7 @@ summary as formatted HTML.
 NOTE: this is a developer/demo harness only. The spec's intended delivery is
 inside Salesforce Service Cloud (no new UI), so this is for local testing.
 
-Run:  .venv/bin/python webapp.py     then open http://localhost:8000
+Run:  summarizer-web      then open http://localhost:8000
 """
 
 import html
@@ -17,7 +17,7 @@ from urllib.parse import parse_qs
 
 from dotenv import load_dotenv
 
-from summarizer import summarize
+from .core import summarize
 
 PORT = 8000
 

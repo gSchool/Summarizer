@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "summarizer"
+version = "0.1.0"
+description = "Customer support ticket summarizer (RQ-1 handoff summaries)."
+requires-python = ">=3.11"
+dependencies = [
+    "python-dotenv>=1.0.1",
+    "google-genai>=1.21.1",
+]
+
+[project.scripts]
+summarizer = "summarizer.main:main"
+summarizer-web = "summarizer.webapp:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/summarizer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

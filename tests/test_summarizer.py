@@ -15,9 +15,17 @@ import pytest
 
 import summarizer
 
+_FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
+
+
+def _fixture(name):
+    """Resolve a fixture file relative to this test file, not the CWD."""
+    return os.path.join(_FIXTURE_DIR, name)
+
+
 FIXTURES = [
-    "fixtures/ticket-48190-password-reset.json",
-    "fixtures/ticket-48213-billing-dispute.json",
+    _fixture("ticket-48190-password-reset.json"),
+    _fixture("ticket-48213-billing-dispute.json"),
 ]
 
 
@@ -68,7 +76,7 @@ def test_fixture_block_is_stripped_before_prompting():
 
 
 def test_flatten_thread_tags_roles_and_orders_chronologically():
-    ticket = summarizer.load_fixture("fixtures/ticket-48213-billing-dispute.json")
+    ticket = summarizer.load_fixture(_fixture("ticket-48213-billing-dispute.json"))
     thread = summarizer.flatten_thread(ticket)
     assert "[CUSTOMER]" in thread
     assert "[AGENT]" in thread

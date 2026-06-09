@@ -16,7 +16,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from llm import generate_text, get_model_name
+from .llm import generate_text, get_model_name
 
 
 def _utc_now_iso() -> str:
