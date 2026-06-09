@@ -29,12 +29,15 @@ logging are tracked separately and not all implemented here.
 
 ```bash
 # create and activate a virtual environment
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 
 # install the package (editable) plus the test tooling
 pip install -e . --group dev
 ```
+
+> On Windows, activate the virtual environment with `.venv\Scripts\activate`
+> instead of `source .venv/bin/activate`.
 
 Then configure a backend. Copy the example env file and fill it in:
 
