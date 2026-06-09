@@ -74,16 +74,18 @@ Set `LLM_PROVIDER` to pick the LLM (defaults to `gemini`).
 
 Installing the package exposes two console commands.
 
+Sample tickets for demoing live in [`demo/`](demo/) (clean, paste-ready).
+
 ### CLI
 
 ```bash
-summarizer tests/fixtures/ticket-48190-password-reset.json
+summarizer demo/ticket-48190-password-reset.json
 ```
 
 Add `--json` to print the raw structured summary instead of the formatted view:
 
 ```bash
-summarizer tests/fixtures/ticket-48190-password-reset.json --json
+summarizer demo/ticket-48190-password-reset.json --json
 ```
 
 ### Web demo UI
@@ -93,7 +95,8 @@ summarizer-web
 # then open http://localhost:8000
 ```
 
-Paste ticket JSON into the textarea and submit to see the rendered summary.
+Paste the contents of a `demo/` ticket into the textarea and submit to see the
+rendered summary.
 
 ## Tests
 
