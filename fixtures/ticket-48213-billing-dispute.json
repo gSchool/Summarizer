@@ -1,0 +1,132 @@
+{
+  "_fixture": {
+    "name": "Ticket #48213 — Billing Dispute (negative sentiment, contradiction)",
+    "companion": "ticket-48213-billing-dispute.md",
+    "shape": "Salesforce Service Cloud Case with related EmailMessage + CaseComment records, plus the linked Contact/Account whose records the AC-3 contradiction check compares against. Modeled on the REST/SOQL parent-to-child query shape: GET /services/data/v60.0/query?q=SELECT ... FROM Case WHERE CaseNumber='00048213'",
+    "expected_summary": {
+      "timeline": "Charge 5/26 -> dispute opened 5/28 -> $40 credit promised + callback promised for 5/29 -> 6/2 customer reports neither happened -> escalation/handoff 6/2",
+      "sentiment": "Negative",
+      "prior_commitments": [
+        "Devin: $40 credit, expected 3-5 business days (2026-05-28)",
+        "Devin: billing-team callback on 2026-05-29, 1-3 PM local",
+        "Priya: states credit was approved 2026-05-28"
+      ],
+      "unresolved": [
+        "Callback promised by Devin but Priya finds no record of it (CONFLICTING)",
+        "Credit shows approved/applied on account but customer's bank shows nothing received (CONFLICTING -> needs human verification)"
+      ]
+    },
+    "counter_example": "Reading EmailMessage[5] ('credit was approved on May 28') and the Account.Billing_Credit_Status__c='Applied' field, a naive summarizer concludes the issue is RESOLVED, omitting that the customer still reports no credit received and that the promised callback never occurred."
+  },
+  "Case": {
+    "attributes": { "type": "Case", "url": "/services/data/v60.0/sobjects/Case/5001x000ABCDEF1" },
+    "Id": "5001x000ABCDEF1",
+    "CaseNumber": "00048213",
+    "Subject": "Billing dispute - overcharged $89.99, plan is $49.99",
+    "Description": "Customer charged $89.99 on 2026-05-26; expected $49.99. Second occurrence. Requests fix + refund.",
+    "Status": "Escalated",
+    "Origin": "Email",
+    "Priority": "High",
+    "Type": "Billing",
+    "ContactId": "0031x000XYZ0001",
+    "AccountId": "0011x000ACCT0001",
+    "OwnerId": "0051x000AGTPriya",
+    "CreatedDate": "2026-05-28T09:14:00.000+0000",
+    "ClosedDate": null,
+    "IsEscalated": true
+  },
+  "Contact": {
+    "attributes": { "type": "Contact", "url": "/services/data/v60.0/sobjects/Contact/0031x000XYZ0001" },
+    "Id": "0031x000XYZ0001",
+    "Name": "Maria Chen",
+    "Email": "maria.chen@example.com",
+    "Phone": "+1-555-0148"
+  },
+  "Account": {
+    "attributes": { "type": "Account", "url": "/services/data/v60.0/sobjects/Account/0011x000ACCT0001" },
+    "Id": "0011x000ACCT0001",
+    "Name": "Maria Chen",
+    "Plan__c": "Premium",
+    "Customer_Since__c": "2021-03-01",
+    "Monthly_Rate__c": 49.99,
+    "Last_Charge_Amount__c": 89.99,
+    "Last_Charge_Date__c": "2026-05-26",
+    "Billing_Credit_Status__c": "Applied",
+    "Billing_Credit_Amount__c": 40.00,
+    "Billing_Credit_Date__c": "2026-05-28"
+  },
+  "EmailMessages": {
+    "totalSize": 6,
+    "done": true,
+    "records": [
+      {
+        "attributes": { "type": "EmailMessage" },
+        "Id": "02s1x0001", "ParentId": "5001x000ABCDEF1", "Incoming": true,
+        "FromName": "Maria Chen", "FromAddress": "maria.chen@example.com",
+        "ToAddress": "support@company.com",
+        "Subject": "Billing dispute - overcharged",
+        "MessageDate": "2026-05-28T09:14:00.000+0000", "Status": "0",
+        "TextBody": "I was charged $89.99 on May 26 but my plan is supposed to be $49.99/month. This is the second time this has happened. Please fix this and refund the difference."
+      },
+      {
+        "attributes": { "type": "EmailMessage" },
+        "Id": "02s1x0002", "ParentId": "5001x000ABCDEF1", "Incoming": false,
+        "FromName": "Devin (Support)", "FromAddress": "support@company.com",
+        "ToAddress": "maria.chen@example.com",
+        "Subject": "RE: Billing dispute - overcharged",
+        "MessageDate": "2026-05-28T10:02:00.000+0000", "Status": "3",
+        "TextBody": "Hi Maria, I'm sorry about that. I can see the $89.99 charge. It looks like an add-on was applied in error. I'll remove it going forward and issue a $40 credit. You should see it within 3-5 business days."
+      },
+      {
+        "attributes": { "type": "EmailMessage" },
+        "Id": "02s1x0003", "ParentId": "5001x000ABCDEF1", "Incoming": true,
+        "FromName": "Maria Chen", "FromAddress": "maria.chen@example.com",
+        "ToAddress": "support@company.com",
+        "Subject": "RE: Billing dispute - overcharged",
+        "MessageDate": "2026-05-28T10:21:00.000+0000", "Status": "0",
+        "TextBody": "Thank you. Also, can someone call me to confirm? I'd rather not keep emailing back and forth."
+      },
+      {
+        "attributes": { "type": "EmailMessage" },
+        "Id": "02s1x0004", "ParentId": "5001x000ABCDEF1", "Incoming": false,
+        "FromName": "Devin (Support)", "FromAddress": "support@company.com",
+        "ToAddress": "maria.chen@example.com",
+        "Subject": "RE: Billing dispute - overcharged",
+        "MessageDate": "2026-05-28T10:35:00.000+0000", "Status": "3",
+        "TextBody": "Absolutely. I'll have someone from our billing team call you tomorrow (May 29) between 1-3 PM your local time."
+      },
+      {
+        "attributes": { "type": "EmailMessage" },
+        "Id": "02s1x0005", "ParentId": "5001x000ABCDEF1", "Incoming": true,
+        "FromName": "Maria Chen", "FromAddress": "maria.chen@example.com",
+        "ToAddress": "support@company.com",
+        "Subject": "RE: Billing dispute - overcharged",
+        "MessageDate": "2026-06-02T08:47:00.000+0000", "Status": "0",
+        "TextBody": "No one ever called, and I still don't see the $40 credit on my account. It's been almost a week."
+      },
+      {
+        "attributes": { "type": "EmailMessage" },
+        "Id": "02s1x0006", "ParentId": "5001x000ABCDEF1", "Incoming": false,
+        "FromName": "Priya (Support)", "FromAddress": "support@company.com",
+        "ToAddress": "maria.chen@example.com",
+        "Subject": "RE: Billing dispute - overcharged",
+        "MessageDate": "2026-06-02T09:30:00.000+0000", "Status": "3",
+        "TextBody": "Hi Maria, apologies for the delay. I'm checking on the credit now. I do see the $40 credit was approved on May 28 - it may still be processing on your bank's end. I don't see a record of a scheduled callback, unfortunately."
+      }
+    ]
+  },
+  "CaseComments": {
+    "totalSize": 1,
+    "done": true,
+    "records": [
+      {
+        "attributes": { "type": "CaseComment" },
+        "Id": "00a1x0001", "ParentId": "5001x000ABCDEF1",
+        "IsPublished": false,
+        "CreatedById": "0051x000AGTPriya",
+        "CreatedDate": "2026-06-02T14:40:00.000+0000",
+        "CommentBody": "Customer states bank shows no pending credit and is considering canceling after a missed callback. Escalating to senior specialist to resolve both the credit and the missed callback. Handing off now."
+      }
+    ]
+  }
+}
