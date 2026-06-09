@@ -22,7 +22,8 @@ logging are tracked separately and not all implemented here.
 ## Requirements
 
 - Python ≥ 3.11
-- A Gemini API key (the app calls Gemini via the `google-genai` SDK)
+- An LLM backend — either a Gemini API key (default) or a local Ollama server.
+  See [Choosing a backend](#choosing-a-backend).
 
 ## Setup
 
@@ -35,14 +36,18 @@ source .venv/bin/activate
 pip install -e . --group dev
 ```
 
-Then provide credentials. Copy the example env file and fill in your key:
+Then configure a backend. Copy the example env file and fill it in:
 
 ```bash
 cp .env.example .env
-# edit .env and set GEMINI_API_KEY=...
+# edit .env: set GEMINI_API_KEY=...   (or LLM_PROVIDER=ollama, see below)
 ```
 
-Recognized environment variables (read from `.env` or the shell):
+### Choosing a backend
+
+Set `LLM_PROVIDER` to pick the LLM (defaults to `gemini`).
+
+**Gemini** (`LLM_PROVIDER=gemini`) — set at least one API key:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
@@ -51,6 +56,16 @@ Recognized environment variables (read from `.env` or the shell):
 | `GEMINI_MODEL` | no | Override the model (default `gemini-3.5-flash`) |
 
 \* Set at least one of `GEMINI_API_KEY` / `GOOGLE_API_KEY`.
+
+**Ollama** (`LLM_PROVIDER=ollama`) — runs against a local
+[Ollama](https://ollama.com) server; no API key needed. Pull a model first
+(e.g. `ollama pull qwen3.5`):
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `OLLAMA_MODEL` | no | Model to use (default `qwen3.5`) |
+| `OLLAMA_HOST` | no | Server host (default `localhost`) |
+| `OLLAMA_PORT` | no | Server port (default `11434`) |
 
 ## Running
 
