@@ -44,11 +44,41 @@ expose it as an injectable parameter the same way.** Don't reach for
 `unittest.mock` or monkeypatching — the suite is deliberately mock-free and
 deterministic.
 
-## Convention: TDD, sliced by spec acceptance criteria
+## Convention: strict TDD (red-green-refactor)
 
-- Test-first, one RQ / user-story acceptance criterion at a time.
-- Tests cite the spec AC they cover (see the comments in
-  `tests/test_summarizer.py`). Keep that traceability when adding tests.
+This project is built test-first. Follow the Three Rules: (1) write no production
+code except to make a failing test pass; (2) write no more of a test than is
+sufficient to fail; (3) write no more production code than is sufficient to pass
+the one failing test.
+
+The cycle, one small behavior at a time:
+
+1. **RED** — write a *single* failing test for the next behavior; run the suite
+   to confirm it fails. A test's shape encodes architectural commitments
+   (collaborators, seams, signatures). **Don't volunteer that list** — show the
+   failing test and ask the human what design decisions it encodes; only detail
+   them if asked. Then **stop and wait** for approval.
+2. **GREEN** — write the minimal code to pass; run the suite to confirm all
+   green. No logic beyond what that one test needs. Then **stop and wait**.
+3. **REFACTOR** — the human decides, not you. Ask "any refactoring you'd like?"
+   — never declare it unnecessary or skip it yourself. Proposed refactors must
+   keep tests green; if one goes red, undo it (behavior changes get their own RED
+   cycle). **Stop and wait** before applying.
+4. **COMMIT** (when the user asks) — propose a concise message describing the
+   behavior just implemented, then **wait for approval** to commit.
+
+Project specifics:
+
+- Slice by spec acceptance criteria — one RQ / user-story AC at a time. Tests
+  cite the AC they cover (see comments in `tests/test_summarizer.py`); keep that
+  traceability.
+- Match the existing runner/conventions: `pytest`, mock-free, side effects
+  injected (see the IoC section above). Run the suite after *every* change.
+
+**After each step, state the changed file path(s) and pause for explicit
+approval before the next step.** Never combine a recommendation with an action
+in the same response, and never write code or advance a step without the user
+saying to proceed.
 
 ## Safety: live API calls are opt-in and must stay that way
 
