@@ -33,7 +33,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 # install the package (editable) plus the test tooling
-pip install -e . --group dev
+pip install -e ".[dev]"
 ```
 
 > On Windows, activate the virtual environment with `.venv\Scripts\activate`

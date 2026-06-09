@@ -12,14 +12,14 @@ dependencies = [
     "google-genai>=1.21.1",
 ]
 
-[project.scripts]
-summarizer = "summarizer.main:main"
-summarizer-web = "summarizer.webapp:main"
-
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "pytest>=8",
 ]
+
+[project.scripts]
+summarizer = "summarizer.main:main"
+summarizer-web = "summarizer.webapp:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/summarizer"]
