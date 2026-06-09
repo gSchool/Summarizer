@@ -95,8 +95,8 @@ summarizer-web
 # then open http://localhost:8000
 ```
 
-Paste the contents of a `demo/` ticket into the textarea and submit to see the
-rendered summary.
+Paste the contents of a `demo/` ticket into the textarea — or drag a `.json`
+file onto it — and submit to see the rendered summary.
 
 ## Tests
 

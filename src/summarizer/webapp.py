@@ -48,16 +48,34 @@ PAGE = """<!doctype html>
   section h2 {{ font-size: 1rem; margin-bottom: .3rem; }}
   ul {{ margin: 0; padding-left: 1.2rem; }}
   .muted {{ color: #6b7280; }}
+  textarea.drag {{ outline: 2px dashed #6b7280; outline-offset: 2px; }}
 </style>
 </head>
 <body>
 <h1>Ticket Summarizer <span class="muted">(dev harness)</span></h1>
 <form method="post">
-  <label for="ticket">Paste ticket fixture JSON:</label>
+  <label for="ticket">Paste ticket fixture JSON <span class="muted">(or drop a .json file)</span>:</label>
   <textarea id="ticket" name="ticket" placeholder='{{"Case": {{...}}, "EmailMessages": {{...}}}}'>{ticket}</textarea>
   <button type="submit">Summarize</button>
 </form>
 {result}
+<script>
+  const ta = document.getElementById("ticket");
+  // Prevent the browser from navigating to a dropped file anywhere on the page.
+  ["dragover", "drop"].forEach(ev =>
+    window.addEventListener(ev, e => e.preventDefault()));
+  ["dragenter", "dragover"].forEach(ev =>
+    ta.addEventListener(ev, () => ta.classList.add("drag")));
+  ["dragleave", "drop"].forEach(ev =>
+    ta.addEventListener(ev, () => ta.classList.remove("drag")));
+  ta.addEventListener("drop", e => {{
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {{ ta.value = reader.result; }};
+    reader.readAsText(file);
+  }});
+</script>
 </body>
 </html>
 """

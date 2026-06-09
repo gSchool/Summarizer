@@ -8,7 +8,8 @@ Run one through the CLI:
 summarizer demo/ticket-48213-billing-dispute.json
 ```
 
-Or start the web UI and paste a file's contents into the textarea:
+Or start the web UI and drag a `.json` file onto the textarea (or paste its
+contents):
 
 ```bash
 summarizer-web
