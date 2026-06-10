@@ -124,7 +124,8 @@ class Handler(BaseHTTPRequestHandler):
 
         self._send(PAGE.substitute(ticket=html.escape(echo), result=result))
 
-    def log_message(self, *args):  # quieter console
+    def log_message(self, *args, **kwargs):  
+        # quieter console
         pass
 
 
