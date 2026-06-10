@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ticket Summarizer</title>
+<style>
+$styles
+</style>
+</head>
+<body>
+<h1>Ticket Summarizer <span class="muted">(dev harness)</span></h1>
+<form method="post">
+  <label for="ticket">Paste ticket fixture JSON <span class="muted">(or drop a .json file)</span>:</label>
+  <textarea id="ticket" name="ticket" placeholder='{"Case": {...}, "EmailMessages": {...}}'>$ticket</textarea>
+  <button type="submit">Summarize</button>
+</form>
+$result
+<script>
+  const ta = document.getElementById("ticket");
+  // Prevent the browser from navigating to a dropped file anywhere on the page.
+  ["dragover", "drop"].forEach(ev =>
+    window.addEventListener(ev, e => e.preventDefault()));
+  ["dragenter", "dragover"].forEach(ev =>
+    ta.addEventListener(ev, () => ta.classList.add("drag")));
+  ["dragleave", "drop"].forEach(ev =>
+    ta.addEventListener(ev, () => ta.classList.remove("drag")));
+  ta.addEventListener("drop", e => {
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { ta.value = reader.result; };
+    reader.readAsText(file);
+  });
+</script>
+</body>
+</html>

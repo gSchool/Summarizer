@@ -13,6 +13,8 @@ Run:  summarizer-web      then open http://localhost:8000
 import html
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from importlib.resources import files
+from string import Template
 from urllib.parse import parse_qs
 
 from dotenv import load_dotenv
@@ -21,72 +23,38 @@ from .core import summarize
 
 PORT = 8000
 
-PAGE = """<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ticket Summarizer</title>
-<style>
-  :root {{ color-scheme: light dark; }}
-  body {{ font: 15px/1.5 system-ui, sans-serif; max-width: 820px;
-         margin: 2rem auto; padding: 0 1rem; }}
-  h1 {{ font-size: 1.4rem; }}
-  textarea {{ width: 100%; height: 16rem; font: 13px/1.4 ui-monospace, monospace;
-             padding: .6rem; box-sizing: border-box; }}
-  button {{ margin-top: .6rem; padding: .5rem 1.1rem; font-size: 1rem;
-           cursor: pointer; }}
-  .err {{ background: #fde8e8; color: #9b1c1c; padding: .8rem 1rem;
-         border-radius: 6px; margin: 1rem 0; }}
-  .summary {{ margin-top: 1.5rem; }}
-  .sentiment {{ display: inline-block; padding: .2rem .7rem; border-radius: 999px;
-               font-weight: 600; }}
-  .Positive {{ background: #def7ec; color: #03543f; }}
-  .Neutral  {{ background: #e5e7eb; color: #374151; }}
-  .Negative {{ background: #fde8e8; color: #9b1c1c; }}
-  section {{ margin-top: 1.2rem; }}
-  section h2 {{ font-size: 1rem; margin-bottom: .3rem; }}
-  ul {{ margin: 0; padding-left: 1.2rem; }}
-  .muted {{ color: #6b7280; }}
-  textarea.drag {{ outline: 2px dashed #6b7280; outline-offset: 2px; }}
-</style>
-</head>
-<body>
-<h1>Ticket Summarizer <span class="muted">(dev harness)</span></h1>
-<form method="post">
-  <label for="ticket">Paste ticket fixture JSON <span class="muted">(or drop a .json file)</span>:</label>
-  <textarea id="ticket" name="ticket" placeholder='{{"Case": {{...}}, "EmailMessages": {{...}}}}'>{ticket}</textarea>
-  <button type="submit">Summarize</button>
-</form>
-{result}
-<script>
-  const ta = document.getElementById("ticket");
-  // Prevent the browser from navigating to a dropped file anywhere on the page.
-  ["dragover", "drop"].forEach(ev =>
-    window.addEventListener(ev, e => e.preventDefault()));
-  ["dragenter", "dragover"].forEach(ev =>
-    ta.addEventListener(ev, () => ta.classList.add("drag")));
-  ["dragleave", "drop"].forEach(ev =>
-    ta.addEventListener(ev, () => ta.classList.remove("drag")));
-  ta.addEventListener("drop", e => {{
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {{ ta.value = reader.result; }};
-    reader.readAsText(file);
-  }});
-</script>
-</body>
-</html>
-"""
+# Cap POST bodies so a runaway/oversized paste can't be read into memory
+# unbounded. Generous for ticket JSON; this is a localhost dev tool, not a
+# tuned production limit.
+MAX_BODY_BYTES = 2 * 1024 * 1024  # 2 MB
+
+_TEMPLATES = files(__package__).joinpath("templates")
+_STYLES = _TEMPLATES.joinpath("styles.css").read_text("utf-8")
+_INDEX = _TEMPLATES.joinpath("index.html").read_text("utf-8")
+# Inline the stylesheet once at import; $ticket/$result stay for per-request render.
+PAGE = Template(Template(_INDEX).safe_substitute(styles=_STYLES))
+
+
+# Bound how much model output we render: cap list length and per-item size so a
+# malformed/pathological response can't blow up the page. Generous vs. any real
+# handoff summary.
+_MAX_ITEMS = 200
+_MAX_ITEM_CHARS = 2000
 
 
 def _render_summary(summary: dict) -> str:
     def items(key: str) -> str:
         vals = summary.get(key) or []
+        if not isinstance(vals, list):
+            vals = [vals]
         if not vals:
             return '<p class="muted">(none)</p>'
-        lis = "".join(f"<li>{html.escape(str(v))}</li>" for v in vals)
+        shown = vals[:_MAX_ITEMS]
+        lis = "".join(
+            f"<li>{html.escape(str(v)[:_MAX_ITEM_CHARS])}</li>" for v in shown
+        )
+        if len(vals) > _MAX_ITEMS:
+            lis += f'<li class="muted">(+{len(vals) - _MAX_ITEMS} more truncated)</li>'
         return f"<ul>{lis}</ul>"
 
     sentiment = html.escape(str(summary.get("sentiment", "Unknown")))
@@ -121,10 +89,15 @@ class Handler(BaseHTTPRequestHandler):
         if self.path not in ("/", "/index.html"):
             self._send(_render_error("Not found"), status=404)
             return
-        self._send(PAGE.format(ticket="", result=""))
+        self._send(PAGE.substitute(ticket="", result=""))
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
+        if length > MAX_BODY_BYTES:
+            self._send(
+                _render_error("Request too large (max 2 MB)."), status=413
+            )
+            return
         raw = self.rfile.read(length).decode("utf-8")
         fields = parse_qs(raw, keep_blank_values=True)
         ticket_text = (fields.get("ticket", [""])[0]).strip()
@@ -141,12 +114,18 @@ class Handler(BaseHTTPRequestHandler):
             result = _render_error(f"Invalid JSON: {exc}")
         except (ValueError, KeyError) as exc:
             result = _render_error(f"Could not summarize: {exc}")
-        except Exception as exc:  # surface model/network errors to the page
-            result = _render_error(f"Summarization failed: {exc}")
+        except Exception:  # noqa: BLE001 - dev tool: don't leak internals to page
+            # The detail is printed to the console; the page gets a generic
+            # message so model/gateway internals aren't exposed in the response.
+            import traceback
 
-        self._send(PAGE.format(ticket=html.escape(echo), result=result))
+            traceback.print_exc()
+            result = _render_error("Summarization failed - see server console.")
 
-    def log_message(self, *args):  # quieter console
+        self._send(PAGE.substitute(ticket=html.escape(echo), result=result))
+
+    def log_message(self, *args, **kwargs):  
+        # quieter console
         pass
 
 
