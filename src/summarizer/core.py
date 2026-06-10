@@ -186,8 +186,14 @@ def build_prompt(ticket: dict[str, Any]) -> str:
     return prompt
 
 
-def _extract_json(text: str) -> dict[str, Any]:
-    """Pull the JSON object out of a model response that may be fenced."""
+def extract_json(text: str) -> dict[str, Any]:
+    """Pull the JSON object out of a model response that may be fenced.
+
+    A model-response parser with its own contract (recover the JSON object from
+    possibly-fenced, prose-surrounded text), unit-tested directly because that
+    space is unreachable through summarize() without a controlled double. Not
+    part of the package's public API until a real external caller needs it.
+    """
     text = text.strip()
     if text.startswith("```"):
         # strip ```json ... ``` fences
@@ -273,7 +279,7 @@ def summarize(
         emit("outage", fallback_triggered=True, error_code=error_code)
         raise SummaryUnavailable(error_code) from exc
 
-    summary = _extract_json(raw)
+    summary = extract_json(raw)
 
     missing = REQUIRED_KEYS - summary.keys()
     if missing:

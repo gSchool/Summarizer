@@ -15,6 +15,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
+    "hypothesis>=6",
 ]
 
 [project.scripts]

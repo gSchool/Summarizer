@@ -14,6 +14,12 @@ import os
 import pytest
 
 import summarizer
+from summarizer import core
+
+# Pure helpers (redact_pii, build_prompt, flatten_thread) are intentionally not
+# part of summarizer's public API; tests reach them via summarizer.core, which
+# is the project's convention for unit-testing internals without promising them
+# publicly. The orchestration entry points stay on the package surface.
 
 _FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
 
@@ -40,7 +46,7 @@ def _fake_generator_for(path):
         "prior_commitments": meta["prior_commitments"],
         "unresolved_questions": meta["unresolved"],
     }
-    # Wrap in a code fence to also exercise _extract_json's fence handling.
+    # Wrap in a code fence to also exercise extract_json's fence handling.
     return lambda _prompt: "```json\n" + json.dumps(payload) + "\n```"
 
 
@@ -77,7 +83,7 @@ def test_fixture_block_is_stripped_before_prompting():
 
 def test_flatten_thread_tags_roles_and_orders_chronologically():
     ticket = summarizer.load_fixture(_fixture("ticket-48213-billing-dispute.json"))
-    thread = summarizer.flatten_thread(ticket)
+    thread = core.flatten_thread(ticket)
     assert "[CUSTOMER]" in thread
     assert "[AGENT]" in thread
     assert "[INTERNAL NOTE]" in thread
@@ -99,7 +105,7 @@ def test_missing_required_field_raises():
 
 
 def test_redact_pii_replaces_ssn_with_token():
-    clean, detected = summarizer.redact_pii("Customer SSN is 123-45-6789, please verify.")
+    clean, detected = core.redact_pii("Customer SSN is 123-45-6789, please verify.")
     assert "123-45-6789" not in clean
     assert "[REDACTED-SSN]" in clean
     assert "SSN" in detected
@@ -107,19 +113,19 @@ def test_redact_pii_replaces_ssn_with_token():
 
 def test_redact_pii_leaves_no_identifiable_fragment():
     # Counter-example in RQ-2 forbids partial masking that leaves fragments.
-    clean, _ = summarizer.redact_pii("SSN 123-45-6789 and acct 4567890123")
+    clean, _ = core.redact_pii("SSN 123-45-6789 and acct 4567890123")
     assert "6789" not in clean
     assert "4567890123" not in clean
 
 
 def test_redact_pii_reports_each_category_once():
     text = "SSN 123-45-6789, DOB 1990-04-12, account 4567890123"
-    _, detected = summarizer.redact_pii(text)
+    _, detected = core.redact_pii(text)
     assert set(detected) == {"SSN", "DOB", "ACCOUNT"}
 
 
 def test_redact_pii_clean_text_reports_nothing():
-    clean, detected = summarizer.redact_pii("No sensitive data here.")
+    clean, detected = core.redact_pii("No sensitive data here.")
     assert detected == []
     assert clean == "No sensitive data here."
 
@@ -145,7 +151,7 @@ def _ticket_with_pii():
 
 def test_prompt_contains_no_raw_in_scope_pii():
     # RQ-2: redaction must happen before the model sees the thread.
-    prompt = summarizer.build_prompt(_ticket_with_pii())
+    prompt = core.build_prompt(_ticket_with_pii())
     assert "123-45-6789" not in prompt
     assert "4567890123" not in prompt
     assert "[REDACTED-SSN]" in prompt
@@ -207,7 +213,7 @@ def test_audit_event_carries_timestamp_request_id_and_model():
 def test_redaction_spares_header_and_timestamps():
     # Case number and message timestamps are not customer-supplied PII; only
     # message/comment bodies are redacted. (Body-only redaction scope.)
-    thread = summarizer.flatten_thread(_ticket_with_pii())
+    thread = core.flatten_thread(_ticket_with_pii())
     assert "00099999" in thread          # case number survives
     assert "2026-06-01" in thread        # event timestamp survives
     assert "123-45-6789" not in thread   # body SSN is gone
